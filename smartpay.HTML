@@ -1,0 +1,772 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartPay | AI Spending Assistant</title>
+
+<style>
+:root {
+  --primary: #625cf5;
+  --bg: #f5f6fc;
+  --white: #ffffff;
+  --text: #20243a;
+  --muted: #7d849a;
+  --green: #129875;
+  --red: #df5264;
+  --border: #e8eaf3;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 225px;
+  background: white;
+  border-right: 1px solid var(--border);
+  padding: 25px 16px;
+  flex-shrink: 0;
+}
+.logo {
+  font-size: 25px;
+  font-weight: bold;
+  color: var(--primary);
+  margin: 0 8px 35px;
+}
+.logo span { color: var(--text); }
+.nav button {
+  width: 100%;
+  padding: 13px;
+  margin-bottom: 7px;
+  border: 0;
+  border-radius: 10px;
+  text-align: left;
+  background: white;
+  color: var(--muted);
+  font-weight: bold;
+}
+.nav button.active, .nav button:hover {
+  background: #efefff;
+  color: var(--primary);
+}
+main {
+  flex: 1;
+  min-width: 0;
+  padding: 28px;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 25px;
+}
+.header h1 { margin: 0; font-size: 27px; }
+.muted { color: var(--muted); font-size: 13px; }
+.btn {
+  padding: 11px 15px;
+  border: 0;
+  border-radius: 9px;
+  font-weight: bold;
+}
+.primary { background: var(--primary); color: white; }
+.secondary { background: #eeeeff; color: var(--primary); }
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 18px;
+  min-width: 0;
+}
+.stat-label { color: var(--muted); font-size: 13px; }
+.stat-value {
+  font-size: 25px;
+  font-weight: bold;
+  margin-top: 12px;
+  overflow-wrap: anywhere;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 18px;
+}
+h2 { font-size: 18px; margin-top: 0; }
+.section { display: none; }
+.section.active { display: block; }
+.field { margin-bottom: 14px; }
+.field label {
+  display: block;
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+.field input, .field select {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 520px;
+}
+th, td {
+  text-align: left;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+th { color: var(--muted); }
+.table-wrap { overflow-x: auto; }
+.income { color: var(--green); font-weight: bold; }
+.expense { color: var(--red); font-weight: bold; }
+.progress {
+  height: 9px;
+  background: #eeeef5;
+  border-radius: 20px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+.progress span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--primary);
+}
+.tip {
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.5;
+}
+.tip:last-child { border: 0; }
+.tip strong { display: block; margin-bottom: 5px; }
+.tip p { margin: 0; color: var(--muted); font-size: 13px; }
+.empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 25px 5px;
+  font-size: 13px;
+}
+.modal {
+  position: fixed;
+  inset: 0;
+  background: #15172e88;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+  z-index: 5;
+}
+.modal.open { display: flex; }
+.modal-content {
+  background: white;
+  padding: 25px;
+  border-radius: 16px;
+  width: min(100%, 440px);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.notice {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f0efff;
+  color: var(--primary);
+  margin-bottom: 15px;
+  display: none;
+}
+.notice.show { display: block; }
+footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 20px;
+}
+@media(max-width:950px) {
+  .stats { grid-template-columns: repeat(2,1fr); }
+  .grid { grid-template-columns: 1fr; }
+}
+@media(max-width:650px) {
+  .layout { display: block; }
+  .sidebar {
+    width: 100%;
+    padding: 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { margin: 5px 8px 12px; }
+  .nav { display: flex; overflow-x: auto; }
+  .nav button { width: auto; white-space: nowrap; }
+  main { padding: 16px 12px; }
+  .header h1 { font-size: 21px; }
+  .stats { gap: 9px; }
+  .card { padding: 15px; }
+  .stat-value { font-size: 21px; }
+}
+</style>
+</head>
+
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <div class="logo">Smart<span>Pay</span> ✦</div>
+  <nav class="nav">
+    <button class="active" data-page="dashboard">▦ Dashboard</button>
+    <button data-page="transactions">⇄ Transactions</button>
+    <button data-page="budget">◎ Budget Planner</button>
+    <button data-page="ai">✦ AI Spending</button>
+  </nav>
+</aside>
+
+<main>
+  <header class="header">
+    <div>
+      <div class="muted" id="today"></div>
+      <h1 id="pageTitle">Your Finance Dashboard</h1>
+    </div>
+    <button class="btn primary" id="addBtn">+ Add Transaction</button>
+  </header>
+
+  <div id="notice" class="notice" role="status"></div>
+
+  <!-- DASHBOARD -->
+  <section id="dashboard" class="section active">
+    <div class="stats">
+      <div class="card">
+        <div class="stat-label">Current Balance</div>
+        <div class="stat-value" id="balance">₹0</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">Monthly Income</div>
+        <div class="stat-value" id="income">₹0</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">Monthly Expenses</div>
+        <div class="stat-value" id="expenses">₹0</div>
+      </div>
+      <div class="card">
+        <div class="stat-label">Budget Remaining</div>
+        <div class="stat-value" id="remaining">—</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Recent Transactions</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Category</th><th>Amount</th></tr>
+            </thead>
+            <tbody id="recentRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Monthly Budget</h2>
+        <div class="muted">Expenses this month</div>
+        <div class="stat-value" id="spent">₹0</div>
+        <div class="progress"><span id="budgetBar"></span></div>
+        <div class="muted" id="budgetText">Set a budget to begin tracking.</div>
+        <button class="btn secondary" id="budgetBtn">Set Budget</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Spending Categories</h2>
+      <div id="categories" class="empty">
+        No expenses recorded yet. Add your first transaction.
+      </div>
+    </div>
+  </section>
+
+  <!-- TRANSACTIONS -->
+  <section id="transactions" class="section">
+    <div class="card">
+      <h2>All Transactions</h2>
+      <div class="field">
+        <input id="search" placeholder="Search by name or category">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th><th>Category</th><th>Date</th>
+              <th>Type</th><th>Amount</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="allRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- BUDGET -->
+  <section id="budget" class="section">
+    <div class="grid">
+      <div class="card">
+        <h2>Budget Planner</h2>
+        <div class="field">
+          <label for="budgetInput">Monthly budget (₹)</label>
+          <input id="budgetInput" type="number" min="1" placeholder="Enter your budget">
+        </div>
+        <button class="btn primary" id="saveBudget">Save Budget</button>
+        <div class="progress"><span id="budgetBar2"></span></div>
+        <div id="budgetDetails" class="muted">No budget set yet.</div>
+      </div>
+      <div class="card">
+        <h2>Money Management Tips</h2>
+        <p class="muted">Record expenses regularly, review your budget weekly, and plan savings around essential needs.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI SPENDING -->
+  <section id="ai" class="section">
+    <div class="card">
+      <h2>✦ AI Spending Assistant</h2>
+      <p class="muted">
+        Spending insights are calculated from the transactions you enter.
+        No sample financial records are included.
+      </p>
+      <div class="stats">
+        <div><div class="stat-label">Income</div><div class="stat-value" id="aiIncome">₹0</div></div>
+        <div><div class="stat-label">Expenses</div><div class="stat-value" id="aiExpenses">₹0</div></div>
+      </div>
+      <h2 id="health">Waiting for your data</h2>
+      <p class="muted" id="healthText">Add transactions to receive relevant suggestions.</p>
+      <div class="progress"><span id="aiBar"></span></div>
+      <div class="muted" id="aiBudgetText">Set a budget to analyse your spending limit.</div>
+    </div>
+    <div class="card">
+      <h2>Personalized Suggestions</h2>
+      <div id="tips" class="empty">
+        Add your own transactions to generate spending insights.
+      </div>
+      <button class="btn secondary" id="refreshAI">Refresh Insights</button>
+    </div>
+    <div class="card">
+      <h2>Important Note</h2>
+      <p class="muted">
+        This prototype uses rule-based JavaScript analysis. It does not connect
+        to a generative AI service, bank account, or UPI network.
+      </p>
+    </div>
+  </section>
+
+  <footer>SmartPay · Personal Digital Finance Management</footer>
+</main>
+</div>
+
+<!-- ADD TRANSACTION FORM -->
+<div class="modal" id="transactionModal">
+  <div class="modal-content">
+    <h2>Add Transaction</h2>
+    <p class="muted">Enter your own financial record.</p>
+    <form id="transactionForm">
+      <div class="field">
+        <label for="title">Transaction Name</label>
+        <input id="title" required maxlength="70" placeholder="e.g. Grocery shopping">
+      </div>
+      <div class="field">
+        <label for="amount">Amount (₹)</label>
+        <input id="amount" type="number" min="0.01" step="0.01" required>
+      </div>
+      <div class="field">
+        <label for="type">Transaction Type</label>
+        <select id="type">
+          <option value="expense">Expense</option>
+          <option value="income">Income</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="category">Category</label>
+        <select id="category">
+          <option>Food</option>
+          <option>Transport</option>
+          <option>Shopping</option>
+          <option>Bills</option>
+          <option>Education</option>
+          <option>Entertainment</option>
+          <option>Health</option>
+          <option>Salary</option>
+          <option>Freelance</option>
+          <option>Housing</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="date">Date</label>
+        <input id="date" type="date" required>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn secondary" id="cancel">Cancel</button>
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const TX_KEY = "smartpay_transactions";
+const BUDGET_KEY = "smartpay_budget";
+
+let transactions = [];
+let budget = 0;
+
+try {
+  const saved = localStorage.getItem(TX_KEY);
+  transactions = saved ? JSON.parse(saved) : [];
+  if (!Array.isArray(transactions)) transactions = [];
+} catch (e) {
+  transactions = [];
+}
+
+try {
+  budget = Number(localStorage.getItem(BUDGET_KEY)) || 0;
+} catch (e) {
+  budget = 0;
+}
+
+const $ = id => document.getElementById(id);
+const money = n => new Intl.NumberFormat("en-IN", {
+  style: "currency", currency: "INR", maximumFractionDigits: 2
+}).format(n || 0);
+
+function todayISO() {
+  const d = new Date();
+  return d.getFullYear() + "-" +
+    String(d.getMonth()+1).padStart(2,"0") + "-" +
+    String(d.getDate()).padStart(2,"0");
+}
+
+function currentMonth() {
+  return todayISO().slice(0,7);
+}
+
+function monthTransactions() {
+  return transactions.filter(t => t.date.slice(0,7) === currentMonth());
+}
+
+function total(list, type) {
+  return list.filter(t => t.type === type)
+    .reduce((sum,t) => sum + Number(t.amount), 0);
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;",
+    '"':"&quot;", "'":"&#39;"
+  })[c]);
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(TX_KEY, JSON.stringify(transactions));
+    localStorage.setItem(BUDGET_KEY, String(budget));
+  } catch (e) {
+    alert("Unable to save data in this browser.");
+  }
+}
+
+function notify(message) {
+  $("notice").textContent = message;
+  $("notice").classList.add("show");
+  setTimeout(() => $("notice").classList.remove("show"), 3000);
+}
+
+function openModal() {
+  $("transactionForm").reset();
+  $("date").value = todayISO();
+  $("transactionModal").classList.add("open");
+}
+
+function closeModal() {
+  $("transactionModal").classList.remove("open");
+}
+
+function showPage(page) {
+  document.querySelectorAll(".section").forEach(s => {
+    s.classList.toggle("active", s.id === page);
+  });
+  document.querySelectorAll("[data-page]").forEach(b => {
+    b.classList.toggle("active", b.dataset.page === page);
+  });
+  const titles = {
+    dashboard: "Your Finance Dashboard",
+    transactions: "Your Transactions",
+    budget: "Budget Planner",
+    ai: "AI Spending Assistant"
+  };
+  $("pageTitle").textContent = titles[page];
+}
+
+document.querySelectorAll("[data-page]").forEach(button => {
+  button.addEventListener("click", () => showPage(button.dataset.page));
+});
+
+$("addBtn").addEventListener("click", openModal);
+$("cancel").addEventListener("click", closeModal);
+
+$("transactionForm").addEventListener("submit", event => {
+  event.preventDefault();
+
+  const title = $("title").value.trim();
+  const amount = Number($("amount").value);
+  const date = $("date").value;
+
+  if (!title || !Number.isFinite(amount) || amount <= 0 || !date) {
+    notify("Please enter valid transaction details.");
+    return;
+  }
+
+  transactions.push({
+    id: Date.now(),
+    title,
+    amount,
+    type: $("type").value,
+    category: $("category").value,
+    date
+  });
+
+  saveData();
+  closeModal();
+  render();
+  notify("Transaction saved successfully.");
+});
+
+$("budgetBtn").addEventListener("click", () => {
+  showPage("budget");
+  $("budgetInput").focus();
+});
+
+$("saveBudget").addEventListener("click", () => {
+  const value = Number($("budgetInput").value);
+
+  if (!Number.isFinite(value) || value <= 0) {
+    notify("Enter a budget greater than zero.");
+    return;
+  }
+
+  budget = value;
+  saveData();
+  render();
+  notify("Monthly budget saved.");
+});
+
+$("search").addEventListener("input", renderTransactions);
+$("refreshAI").addEventListener("click", () => {
+  renderAI();
+  notify("Spending insights refreshed.");
+});
+
+$("allRows").addEventListener("click", event => {
+  const button = event.target.closest("[data-delete]");
+  if (!button) return;
+
+  if (confirm("Delete this transaction?")) {
+    transactions = transactions.filter(
+      t => String(t.id) !== button.dataset.delete
+    );
+    saveData();
+    render();
+    notify("Transaction deleted.");
+  }
+});
+
+function renderTransactions() {
+  const sorted = [...transactions].sort((a,b) =>
+    b.date.localeCompare(a.date)
+  );
+
+  const recent = sorted.slice(0,5);
+  $("recentRows").innerHTML = recent.length ? recent.map(t => `
+    <tr>
+      <td>${escapeHTML(t.title)}</td>
+      <td>${escapeHTML(t.category)}</td>
+      <td class="${t.type === "income" ? "income" : "expense"}">
+        ${t.type === "income" ? "+" : "−"}${money(t.amount)}
+      </td>
+    </tr>
+  `).join("") : `
+    <tr><td colspan="3" class="empty">
+      No transactions yet. Add your first record.
+    </td></tr>`;
+
+  const query = $("search").value.toLowerCase();
+  const filtered = sorted.filter(t =>
+    (t.title + " " + t.category).toLowerCase().includes(query)
+  );
+
+  $("allRows").innerHTML = filtered.length ? filtered.map(t => `
+    <tr>
+      <td>${escapeHTML(t.title)}</td>
+      <td>${escapeHTML(t.category)}</td>
+      <td>${escapeHTML(t.date)}</td>
+      <td>${t.type}</td>
+      <td class="${t.type === "income" ? "income" : "expense"}">
+        ${t.type === "income" ? "+" : "−"}${money(t.amount)}
+      </td>
+      <td><button class="btn secondary" data-delete="${t.id}">Delete</button></td>
+    </tr>
+  `).join("") : `
+    <tr><td colspan="6" class="empty">No transactions found.</td></tr>`;
+}
+
+function renderCategories() {
+  const expenses = monthTransactions().filter(t => t.type === "expense");
+  const totalExpenses = total(expenses, "expense");
+  const groups = {};
+
+  expenses.forEach(t => {
+    groups[t.category] = (groups[t.category] || 0) + Number(t.amount);
+  });
+
+  const entries = Object.entries(groups).sort((a,b) => b[1]-a[1]);
+
+  $("categories").innerHTML = entries.length ? entries.map(([name,value]) => `
+    <div class="tip">
+      <strong>${escapeHTML(name)} — ${money(value)}</strong>
+      <div class="progress">
+        <span style="width:${totalExpenses ? value/totalExpenses*100 : 0}%"></span>
+      </div>
+      <p>${totalExpenses ? Math.round(value/totalExpenses*100) : 0}% of recorded expenses</p>
+    </div>
+  `).join("") : `
+    <div class="empty">No expenses recorded yet. Add your first transaction.</div>`;
+}
+
+function renderAI() {
+  const month = monthTransactions();
+  const income = total(month, "income");
+  const expenses = total(month, "expense");
+  const percent = budget ? expenses / budget * 100 : 0;
+  const tips = [];
+
+  $("aiIncome").textContent = money(income);
+  $("aiExpenses").textContent = money(expenses);
+  $("aiBar").style.width = Math.min(100,percent) + "%";
+  $("aiBar").style.background = percent > 100 ? "var(--red)" : "var(--primary)";
+  $("aiBudgetText").textContent = budget
+    ? Math.round(percent) + "% of monthly budget used."
+    : "Set a budget to analyse your spending limit.";
+
+  if (!month.length) {
+    $("health").textContent = "Waiting for your data";
+    $("healthText").textContent =
+      "Add your own transactions to generate useful spending suggestions.";
+    $("tips").innerHTML = `
+      <div class="empty">No insights yet. Add a transaction to get started.</div>`;
+    return;
+  }
+
+  if (budget && expenses > budget) {
+    $("health").textContent = "⚠️ Over budget";
+    $("healthText").textContent =
+      "You are " + money(expenses-budget) + " above your budget.";
+    tips.push(["Budget alert",
+      "Review non-essential purchases and prioritize essential costs."]);
+  } else if (budget && percent >= 80) {
+    $("health").textContent = "👀 Budget nearly used";
+    $("healthText").textContent =
+      "You have used at least 80% of your monthly limit.";
+    tips.push(["Watch your spending",
+      "You have " + money(budget-expenses) +
+      " remaining. Review upcoming expenses before buying extras."]);
+  } else {
+    $("health").textContent = "📊 Spending overview";
+    $("healthText").textContent =
+      "Keep tracking your transactions to understand your money habits.";
+  }
+
+  if (income > 0 && expenses > income) {
+    tips.push(["Review your expenses",
+      "Recorded expenses exceed recorded income by " +
+      money(expenses-income) + ". Check your entries and spending priorities."]);
+  } else if (income > 0) {
+    tips.push(["Plan your savings",
+      "Your recorded income minus expenses is " +
+      money(income-expenses) +
+      ". Consider a realistic savings goal after essential costs."]);
+  }
+
+  const groups = {};
+  month.filter(t => t.type === "expense").forEach(t => {
+    groups[t.category] = (groups[t.category] || 0) + Number(t.amount);
+  });
+  const largest = Object.entries(groups).sort((a,b) => b[1]-a[1])[0];
+
+  if (largest) {
+    tips.push(["Review " + largest[0].toLowerCase() + " spending",
+      largest[0] + " is your largest recorded expense category at " +
+      money(largest[1]) + ". Check whether any costs can be reduced."]);
+  }
+
+  if (!budget) {
+    tips.push(["Set a monthly budget",
+      "Enter a monthly spending limit in Budget Planner to track how much you use."]);
+  }
+
+  $("tips").innerHTML = tips.map(([title,description]) => `
+    <div class="tip">
+      <strong>${escapeHTML(title)}</strong>
+      <p>${escapeHTML(description)}</p>
+    </div>
+  `).join("");
+}
+
+function render() {
+  const month = monthTransactions();
+  const income = total(month,"income");
+  const expenses = total(month,"expense");
+
+  $("balance").textContent = money(income-expenses);
+  $("income").textContent = money(income);
+  $("expenses").textContent = money(expenses);
+  $("remaining").textContent = budget ? money(budget-expenses) : "—";
+  $("spent").textContent = money(expenses);
+  $("budgetText").textContent = budget
+    ? money(expenses) + " spent of " + money(budget)
+    : "Set a budget to begin tracking.";
+  $("budgetBar").style.width =
+    (budget ? Math.min(100,expenses/budget*100) : 0) + "%";
+  $("budgetBar2").style.width =
+    (budget ? Math.min(100,expenses/budget*100) : 0) + "%";
+  $("budgetDetails").textContent = budget
+    ? money(budget-expenses) + " remaining from your budget."
+    : "No budget set yet.";
+  renderTransactions();
+  renderCategories();
+  renderAI();
+}
+
+$("today").textContent = new Date().toLocaleDateString("en-IN", {
+  weekday: "long", day: "numeric", month: "long", year: "numeric"
+});
+$("budgetInput").value = budget || "";
+render();
+</script>
+</body>
+</html>
